@@ -1,95 +1,93 @@
-import Image from "next/image";
-import styles from "./page.module.css";
-
-export default function Home() {
+'use client'
+import { useState, useEffect } from 'react'
+import { ethers } from 'ethers'
+import { ChakraProvider, Flex, Heading, Button } from '@chakra-ui/react'
+import { TabLayout } from './tab-contents'
+import { GITCOIN_PASSPORT_WEIGHTS } from './stamp-weights';
+ 
+const decoderContractAddress = "0x5558D441779Eca04A329BcD6b47830D2C6607769";
+const abi = require('./PassportDecoderABI.json')
+ 
+declare global {
+  interface Window {
+    ethereum: any
+  }
+}
+ 
+declare global {
+  var provider: ethers.BrowserProvider
+}
+ 
+interface Stamp {
+  id: number
+  stamp: string
+}
+ 
+export default function Passport() {
+  // here we deal with any local state we need to manage
+  const [address, setAddress] = useState<string>('default')
+  const [connected, setConnected] = useState<boolean>(false)
+  const [hasStamps, setHasStamps] = useState<boolean>(false)
+  const [stamps, setStamps] = useState<Array<Stamp>>([])
+  const [score, setScore] = useState<Number>(0)
+  const [network, setNetwork] = useState<string>('')
+ 
+  useEffect(() => {
+    checkConnection()
+    async function checkConnection() {
+      if (connected) {
+        console.log("already connected")
+      } else {
+        const result = await connect()
+        console.log(result)
+      }
+    }
+  }, [address, connected])
+ 
+  async function connect() {
+    try {
+      globalThis.provider = new ethers.BrowserProvider(window.ethereum)
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
+      const network = await provider.getNetwork()
+      setAddress(accounts[0])
+      setConnected(true)
+      setNetwork(network.chainId.toString())
+    } catch (err) {
+      console.log('error connecting...')
+    }
+    return true
+  }
+ 
+  const styles = {
+    main: {
+      width: '900px',
+      margin: '0 auto',
+      paddingTop: 90
+    }
+  }
+ 
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
+    /* this is the UI for the app */
+    <div style={styles.main}>
+      <ChakraProvider>
+        <Flex minWidth='max-content' alignItems='right' gap='2' justifyContent='right'>
+          <Button colorScheme='teal' variant='outline' onClick={connect}>Connect</Button>
+          <Button colorScheme='teal' variant='outline' onClick={queryPassport}>Query Passport</Button>
+        </Flex>
         <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+          {connected && <p>✅ Wallet connected</p>}
+          {connected && network == "10" && <p>✅ network: Optimism Sepolia</p>}
+          {connected && network != "10" && <p>🔴 Please switch to Optimism Sepolia network</p>}
         </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+        <br />
+        <br />
+        <br />
+        <br />
+        <Heading as='h1' size='4xl' noOfLines={2}>Onchain Stamp Explorer!</Heading>
+        <br />
+        <br />
+        <TabLayout hasStamps={hasStamps} stamps={stamps} score={score} />
+      </ChakraProvider >
+    </div >
+  )
 }
